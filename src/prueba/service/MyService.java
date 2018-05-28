@@ -39,25 +39,33 @@ public class MyService {
 	@GET
 	@Produces("application/json")
 	public Response getSPARQLQueryResult_JSON(@QueryParam("query") String consulta){
-		System.out.println("Hola");
+		System.out.println("Entramos al método");
 	 	String json=null;
+	 	System.out.println("Vamos a establecer la conexión con Virtuoso");
 	 	VirtGraph set = new VirtGraph (url, "dba", "dba");
-	 	//consulta = "SELECT * from <prueba01> WHERE {?s <#price> ?o}";
+	 	System.out.println("Conexión establecida");
+	 	// -----------FALLA A PARTIR DE AQUÍ -----------
 	 	Query query = QueryFactory.create(consulta);
+	 	System.out.println("Creamos la consulta");
 	 	VirtuosoQueryExecution qe = VirtuosoQueryExecutionFactory.create(query, set);
+	 	System.out.println("Ejecutamos la consulta");
 	 	try {
 	 		ResultSet results = qe.execSelect() ;
+	 		System.out.println("Recogemos los resultados");
 	 	    // write to a ByteArrayOutputStream
 	 	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 	 	    ResultSetFormatter.outputAsJSON(outputStream, results);
+	 	    System.out.println("Transformamos resultados en JSON");
 	 	    // and turn that into a String
-	 	     json = new String(outputStream.toByteArray());	       
+	 	    json = new String(outputStream.toByteArray());
+	 	    System.out.println("Guardamos los resultados en variable json");
 	 	 } catch (Exception e) {
 	 	    e.printStackTrace();
 	 	 } finally {
 	 	    qe.close();
 	 	 }
 	 	 // return json;
+	 	System.out.println("Vamos a devolver respuesta con el header activado");
 	 	 return Response.ok(json).header("Access-Control-Allow-Origin", "*").build();
 	   }
 	   
