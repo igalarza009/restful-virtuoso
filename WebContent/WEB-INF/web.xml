@@ -12,10 +12,10 @@
          <param-name>jersey.config.server.provider.packages</param-name> 
          <param-value>prueba.service</param-value> 
       </init-param>
-      <init-param>
+<!--     <init-param>
 		  <param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
 		  <param-value>prueba.service.CORSFilter</param-value>
-		</init-param> 
+		</init-param> -->
    </servlet> 
    
    <servlet-mapping> 

@@ -30,32 +30,46 @@ public class MyService {
 
 	@Path("/hello")
 	@GET
-	@Produces(MediaType.TEXT_PLAIN)
-	public String hello() {
-		return "Hello World()";
+	@Produces("application/json")
+	public Response hello(@QueryParam("name") String name) {
+		String json=null;
+	 	VirtGraph set = new VirtGraph (url, "dba", "dba");
+	 	String consulta = "select distinct ?Concept where {[] a ?Concept} LIMIT 100";
+	 	Query query = QueryFactory.create(consulta);
+	 	VirtuosoQueryExecution qe = VirtuosoQueryExecutionFactory.create(query, set);
+	 	try {
+	 		ResultSet results = qe.execSelect() ;
+	 	    // write to a ByteArrayOutputStream
+	 	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	 	    ResultSetFormatter.outputAsJSON(outputStream, results);
+	 	    // and turn that into a String
+	 	    json = new String(outputStream.toByteArray());
+	 	    System.out.println("Guardamos los resultados en variable json");
+	 	 } catch (Exception e) {
+	 	    e.printStackTrace();
+	 	 } finally {
+	 	    qe.close();
+	 	 }
+	 	return Response.ok(json).build();
 	}
 	   
 	@Path("/query")
 	@GET
 	@Produces("application/json")
 	public Response getSPARQLQueryResult_JSON(@QueryParam("query") String consulta){
-		System.out.println("Entramos al método");
 	 	String json=null;
-	 	System.out.println("Vamos a establecer la conexión con Virtuoso");
 	 	VirtGraph set = new VirtGraph (url, "dba", "dba");
 	 	System.out.println("Conexión establecida");
 	 	// -----------FALLA A PARTIR DE AQUÍ -----------
+//	 	String consulta2 = "select distinct ?Concept where {[] a ?Concept} LIMIT 100";
 	 	Query query = QueryFactory.create(consulta);
-	 	System.out.println("Creamos la consulta");
 	 	VirtuosoQueryExecution qe = VirtuosoQueryExecutionFactory.create(query, set);
 	 	System.out.println("Ejecutamos la consulta");
 	 	try {
 	 		ResultSet results = qe.execSelect() ;
-	 		System.out.println("Recogemos los resultados");
 	 	    // write to a ByteArrayOutputStream
 	 	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 	 	    ResultSetFormatter.outputAsJSON(outputStream, results);
-	 	    System.out.println("Transformamos resultados en JSON");
 	 	    // and turn that into a String
 	 	    json = new String(outputStream.toByteArray());
 	 	    System.out.println("Guardamos los resultados en variable json");
@@ -65,8 +79,8 @@ public class MyService {
 	 	    qe.close();
 	 	 }
 	 	 // return json;
-	 	System.out.println("Vamos a devolver respuesta con el header activado");
-	 	 return Response.ok(json).header("Access-Control-Allow-Origin", "*").build();
+	 	System.out.println("Devolvemos la respuesta");
+	 	 return Response.ok(json).build();
 	   }
 	   
 	   @Path("/insert")
@@ -77,7 +91,7 @@ public class MyService {
 	 	    VirtGraph set = new VirtGraph (url, "dba", "dba");
 	 	    VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, set);
 	 	    vur.exec(); 
-	 	    return Response.ok().header("Access-Control-Allow-Origin", "*").build();
+	 	    return Response.ok().build();
 	   }
 	   
 	   @Path("/bulkinsert")
@@ -106,7 +120,7 @@ public class MyService {
 	 	    	vur.exec();	    	
 	 	    }
 
-	 	    return Response.ok().header("Access-Control-Allow-Origin", "*").build();
+	 	    return Response.ok().build();
 	   }
 	
 }
