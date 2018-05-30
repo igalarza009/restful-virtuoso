@@ -38,6 +38,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 @Path("/service")
 public class MyService {
 	
+	private String graphURI = "<http://www.sensores.com/ontology/prueba04/extrusoras#>";
 	private String url = "jdbc:virtuoso://localhost:1111";
 
 	@Path("/hello")
@@ -120,6 +121,46 @@ public class MyService {
 	 	    return Response.ok().build();
 	   }
 	   
+//	   ---------- EJEMPLO DEL ARCHIVO TTL ------------
+//		   
+//		@prefix : <http://www.sensores.com/ontology/prueba03/extrusoras#> . 
+//		@prefix owl: <http://www.w3.org/2002/07/owl#> . 
+//		@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . 
+//		@prefix xsd: <http://www.w3.org/2001/XMLSchema#> . 
+//		@prefix sosa: <http://www.w3.org/ns/sosa/> . 
+//		@base <http://www.sensores.com/ontology/prueba03/extrusoras#> . 
+//		:sensor2F1KT7date20180324obs1 rdf:type owl:NamedIndividual , 
+//		:TemperatureObservation . 
+//		:sensor2F1KT7date20180324obs1result rdf:type owl:NamedIndividual , 
+//		:DoubleValueResult . 
+//		:sensor2F1KT7date20180324obs1result sosa:hasSimpleResult "195.9"^^xsd:double . 
+//		:sensor2F1KT7date20180324obs1 sosa:hasResult :sensor2F1KT7date20180324obs1result . 
+//		:sensor2F1KT7date20180324obs1 sosa:resultTime "2018-03-24T23:59:59.657Z"^^xsd:dateTime . 
+//		:sensor2F1KT7 sosa:madeObservation :sensor2F1KT7date20180324obs1 . 
+//	   
+//	   --------------- EJEMPLO DE INSERT ----------------
+//	   
+//	   	prefix : <http://www.sensores.com/ontology/prueba03/extrusoras#>
+//		prefix owl: <http://www.w3.org/2002/07/owl#>
+//		prefix sosa: <http://www.w3.org/ns/sosa/>
+//		prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+//		prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+//
+//		insert data {
+//		   	graph <http://www.sensores.com/ontology/prueba03/extrusoras#>
+//		   	{
+//		   		:sensor2F1KT7obs1prueba rdf:type owl:NamedIndividual , 
+//		   										:TemperatureObservation . 
+//		   		:sensor2F1KT7obs1pruebaResult rdf:type owl:NamedIndividual , 
+//		   										:DoubleValueResult .
+//		   		:sensor2F1KT7obs1pruebaResult sosa:hasSimpleResult "5555"^^xsd:double .
+//		   		:sensor2F1KT7obs1prueba sosa:hasResult :sensor2F1KT7obs1pruebaResult .
+//		   		:sensor2F1KT7obs1prueba sosa:resultTime "2018-05-15T23:05:55.555Z" .
+//		   		:sensor2F1KT7 sosa:madeObservation :sensor2F1KT7obs1prueba . 
+//		   	}
+//		}
+
+	   
 	   @Path("/insertfile")
 	   @POST
 //	   @GET
@@ -129,14 +170,51 @@ public class MyService {
 			   				@FormDataParam("file") InputStream uploadedInputStream,
 			   				@FormDataParam("file") FormDataContentDisposition fileDetail){
 //		   System.out.println("Hola!!");
+		   VirtuosoUpdateRequest vur;  
+	 	   VirtGraph set = new VirtGraph (url, "dba", "dba");
 		   try
 		   {
 		       String line;
 		       BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(uploadedInputStream));
+		       String prefixes = "";
+		       String queries = "";
+		       int contador = 0;
+		       String insertQuery = "";
 		       while( (line = bufferedReader.readLine()) != null )
 		       { 
-		           System.out.printf("%s\n", line);
-		       }  
+		    	   contador++;
+		    	   if (line.indexOf('@') != -1) {
+		    		   if (!line.contains("base")) {
+		    			   prefixes += line.substring(1, line.length()-2);
+		    		   }
+		    	   }
+		    	   else {
+		    		   queries += line + " ";
+		    	   }
+		    	   
+		    	   if (contador == 1000) {
+		    		   insertQuery = prefixes;
+		    		   insertQuery += "insert data { graph " + graphURI + " { ";
+		    		   insertQuery += queries;
+		    		   insertQuery += "} } ";
+		    		   System.out.println("Ejecutaríamos query: ");
+		    		   System.out.println(insertQuery);
+		    		   vur= VirtuosoUpdateFactory.create(insertQuery, set);
+		    		   vur.exec();	
+		    		   contador = 0;
+		    		   queries = "";
+		    	   }
+		       } 
+		       if (contador > 0) {
+		    	   insertQuery = prefixes;
+	    		   insertQuery += "insert data { graph " + graphURI + " { ";
+	    		   insertQuery += queries;
+	    		   insertQuery += "} } ";
+	    		   System.out.println("Ejecutaríamos query: ");
+	    		   System.out.println(insertQuery);
+	    		   vur= VirtuosoUpdateFactory.create(insertQuery, set);
+	    		   vur.exec();	
+			   }
 		   } 
 		   catch( IOException e )
 		   {
