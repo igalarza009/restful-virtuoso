@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.sql.Timestamp;
 import java.util.Scanner;
 
 import javax.ws.rs.Consumes;
@@ -38,8 +39,10 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 @Path("/service")
 public class MyService {
 	
-	private String graphURI = "<http://www.sensores.com/ontology/prueba04/extrusoras#>";
-	private String url = "jdbc:virtuoso://localhost:1111";
+//	private String graphURI = "<http://www.sensores.com/ontology/prueba08/extrusoras#>";
+	private String graphURI = "<http://www.sensores.com/ontology/pruebas_fixed/extrusoras#>";
+//	private String url = "jdbc:virtuoso://localhost:1111";
+	private String url = "jdbc:virtuoso://35.237.194.21:1111";
 
 	@Path("/hello")
 	@POST
@@ -50,11 +53,40 @@ public class MyService {
 	}
 	   
 	@Path("/query")
-//	@GET
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces("application/json")
-	public Response getSPARQLQueryResult_JSON(@FormParam("query") String consulta){ //	@QueryParam
+	public Response postSPARQLQueryResult_JSON(@FormParam("query") String consulta){
+	 	String json=null;
+	 	VirtGraph set = new VirtGraph (url, "dba", "dba");
+	 	System.out.println("Conexión establecida");
+	 	Query query = QueryFactory.create(consulta);
+	 	VirtuosoQueryExecution qe = VirtuosoQueryExecutionFactory.create(query, set);
+	 	System.out.println("Ejecutamos la consulta");
+	 	try {
+	 		ResultSet results = qe.execSelect() ;
+	 	    // write to a ByteArrayOutputStream
+	 	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	 	    ResultSetFormatter.outputAsJSON(outputStream, results);
+	 	    // and turn that into a String
+	 	    json = new String(outputStream.toByteArray());
+	 	    System.out.println("Guardamos los resultados en variable json");
+//	 	    System.out.println(json);
+	 	 } catch (Exception e) {
+	 	    e.printStackTrace();
+	 	 } finally {
+	 	    qe.close();
+	 	 }
+	 	 // return json;
+	 	System.out.println("Devolvemos la respuesta");
+	 	 return Response.ok(json).build();
+	   }
+	
+	
+	@Path("/queryGet")
+	@GET
+	@Produces("application/json")
+	public Response getSPARQLQueryResult_JSON(@QueryParam("query") String consulta){ //	@QueryParam
 	 	String json=null;
 	 	VirtGraph set = new VirtGraph (url, "dba", "dba");
 	 	System.out.println("Conexión establecida");
@@ -169,7 +201,8 @@ public class MyService {
 	   public Response bulkInsertRDF_2(
 			   				@FormDataParam("file") InputStream uploadedInputStream,
 			   				@FormDataParam("file") FormDataContentDisposition fileDetail){
-//		   System.out.println("Hola!!");
+		   Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+	       System.out.println("HORA INICIAL: " + timestamp);
 		   VirtuosoUpdateRequest vur;  
 	 	   VirtGraph set = new VirtGraph (url, "dba", "dba");
 		   try
@@ -179,6 +212,7 @@ public class MyService {
 		       String prefixes = "";
 		       String queries = "";
 		       int contador = 0;
+		       int i = 0;
 		       String insertQuery = "";
 		       while( (line = bufferedReader.readLine()) != null )
 		       { 
@@ -192,13 +226,13 @@ public class MyService {
 		    		   queries += line + " ";
 		    	   }
 		    	   
-		    	   if (contador == 1000) {
+		    	   if (contador == 500) {
 		    		   insertQuery = prefixes;
 		    		   insertQuery += "insert data { graph " + graphURI + " { ";
 		    		   insertQuery += queries;
 		    		   insertQuery += "} } ";
-		    		   System.out.println("Ejecutaríamos query: ");
-		    		   System.out.println(insertQuery);
+		    		   i++;
+//		    		   System.out.println("Ejecutamos query " + i);
 		    		   vur= VirtuosoUpdateFactory.create(insertQuery, set);
 		    		   vur.exec();	
 		    		   contador = 0;
@@ -210,8 +244,7 @@ public class MyService {
 	    		   insertQuery += "insert data { graph " + graphURI + " { ";
 	    		   insertQuery += queries;
 	    		   insertQuery += "} } ";
-	    		   System.out.println("Ejecutaríamos query: ");
-	    		   System.out.println(insertQuery);
+//	    		   System.out.println("Ejecutamos query final");
 	    		   vur= VirtuosoUpdateFactory.create(insertQuery, set);
 	    		   vur.exec();	
 			   }
@@ -221,6 +254,37 @@ public class MyService {
 		       System.err.println( "Error: " + e );
 		   }
 
+		   timestamp = new Timestamp(System.currentTimeMillis());
+	       System.out.println("HORA FINAL: " + timestamp);
+	 	    return Response.ok().build();
+	   }
+	   
+	   @Path("/insertprueba")
+	   @POST
+	   @Produces("application/json")
+	   public Response bulkInsertRDF_Prueba(){
+		   Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+	       System.out.println("HORA INICIAL: " + timestamp);
+		   VirtuosoUpdateRequest vur;  
+	 	   VirtGraph set = new VirtGraph (url, "dba", "admin");
+		   try
+		   {
+			   String insertQuery = "PREFIX dc: <http://purl.org/dc/elements/1.1/> " +
+					   "insert into " +
+					   "graph <http://www.pruebas.com/maquina_virtual/prueba_insert#> " + 
+					   "{ " +
+					   "<http://example/egbook> dc:title  \"Probando probando...\" . " +
+					   "} ";
+			   vur= VirtuosoUpdateFactory.create(insertQuery, set);
+			   vur.exec();	
+		    } 
+		   catch(Exception e)
+		   {
+		       System.err.println( "Error: " + e );
+		   }
+
+		   timestamp = new Timestamp(System.currentTimeMillis());
+	       System.out.println("HORA FINAL: " + timestamp);
 	 	    return Response.ok().build();
 	   }
 	
